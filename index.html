@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>yt-dlp Web Control Panel</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: #f4f7f6;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .container {
+            background: #ffffff;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 480px;
+        }
+        h2 {
+            margin-top: 0;
+            color: #333;
+            text-align: center;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #555;
+        }
+        input[type="text"], select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            box-sizing: border-box;
+            font-size: 14px;
+        }
+        button {
+            width: 100%;
+            padding: 12px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        #statusMessage {
+            margin-top: 15px;
+            padding: 12px;
+            border-radius: 6px;
+            display: none;
+            font-size: 14px;
+            text-align: center;
+        }
+        .success { background-color: #d4edda; color: #155724; }
+        .error { background-color: #f8d7da; color: #721c24; }
+        .loading { background-color: #e2e3e5; color: #383d41; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>yt-dlp Media Downloader</h2>
+    
+    <div class="form-group">
+        <label for="videoUrl">Media Content URL</label>
+        <input type="text" id="videoUrl" placeholder="https://www.youtube.com/watch?v=..." required>
+    </div>
+
+    <div class="form-group">
+        <label for="formatType">Download Format</label>
+        <select id="formatType">
+            <option value="mp4">Video (Highest MP4 Quality)</option>
+            <option value="mp3">Audio Only Extraction (MP3)</option>
+        </select>
+    </div>
+
+    <button id="downloadBtn" onclick="triggerDownload()">Execute Download</button>
+
+    <div id="statusMessage"></div>
+</div>
+
+<script>
+async function triggerDownload() {
+    const urlInput = document.getElementById('videoUrl').value.trim();
+    const formatSelect = document.getElementById('formatType').value;
+    const downloadBtn = document.getElementById('downloadBtn');
+    const statusBox = document.getElementById('statusMessage');
+
+    if (!urlInput) {
+        updateStatus('Please input a valid URL first.', 'error');
+        return;
+    }
+
+    // Adjust UI state for active download activity
+    downloadBtn.disabled = true;
+    updateStatus('Processing download request. Please wait...', 'loading');
+
+    try {
+        const response = await fetch('/api/download', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ videoUrl: urlInput, formatType: formatSelect })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            updateStatus('Success! ' + data.message, 'success');
+            document.getElementById('videoUrl').value = ''; // Clean input
+        } else {
+            updateStatus('Error: ' + data.error, 'error');
+        }
+    } catch (err) {
+        updateStatus('Failed to connect to the backend automation server.', 'error');
+    } finally {
+        downloadBtn.disabled = false;
+    }
+}
+
+function updateStatus(text, className) {
+    const statusBox = document.getElementById('statusMessage');
+    statusBox.innerText = text;
+    statusBox.className = className;
+    statusBox.style.display = 'block';
+}
+</script>
+
+</body>
+</html>
